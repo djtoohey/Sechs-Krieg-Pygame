@@ -1,5 +1,6 @@
-#Sechs Krieg
-# Python Game Basic
+#Sechs Krieg Pygame
+
+# Imoprts
 import pygame
 import random
 from pygame.locals import (
@@ -11,46 +12,67 @@ from pygame.locals import (
     KEYDOWN,
     QUIT,
 )
+
 from pygame.sprite import spritecollideany
+
+# initialize pygame and the display
 pygame.init()
 pygame.display.init()
 
+# CLASS: Player
+# PARAMS: Healthpoints/hp (player_hp), Player movement speed(player_speed) 
+# ATTRS: RECTANGLE, HP, SPEED
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_hp, player_speed):
         super(Player, self).__init__()
+        
+        # CREATING PLAYER RECTANGLE 
         self.surf = pygame.Surface((75, 25))
         self.surf.fill((255,255,255))
         self.rect = self.surf.get_rect()
 
+        # Setting HP and movement speed
         self.hp = player_hp
-        self.speed = player_speed
+        self.movementSpeed = player_speed
 
+    # movements
+    # checks for key press, moves according to players movement speed
     def update(self, pressed_keys):
+        # up
         if pressed_keys[K_UP]:
-            self.rect.move_ip(0, -(self.speed))
+            self.rect.move_ip(0, -(self.movementSpeed))
+        # down
         if pressed_keys[K_DOWN]:
-            self.rect.move_ip(0, self.speed)
-            # print("DOWN")
+            self.rect.move_ip(0, self.movementSpeed)
+        # left
         if pressed_keys[K_LEFT]:
-            self.rect.move_ip(-(self.speed), 0)
-            # print("LEFT")
+            self.rect.move_ip(-(self.movementSpeed), 0)
+        # right
         if pressed_keys[K_RIGHT]:
-            self.rect.move_ip((self.speed), 0)
-            # print("RIGHT")
+            self.rect.move_ip((self.movementSpeed), 0)
 
+        # checking that the player cannot escape the display borders
+        # left border
         if self.rect.left < 0:
             self.rect.left = 0
+        # right border
         if self.rect.right > WIDTH:
             self.rect.right = WIDTH
+        # top border
         if self.rect.top <= 0:
             self.rect.top = 0
+        # bottom border
         if self.rect.bottom >= HEIGHT:
             self.rect.bottom = HEIGHT
+            
 
+# WIP
+# CLASS: Enemy
+# PARAMS: 
+# ATTRS: movement speed, rectangle
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, id):
+    def __init__(self):
         super(Enemy, self).__init__()
-        self.id = id
         self.surf = pygame.Surface((20,10))
         self.surf.fill((255, 255, 255))
         self.rect = self.surf.get_rect(
@@ -59,63 +81,75 @@ class Enemy(pygame.sprite.Sprite):
                 random.randint(0, HEIGHT)
             )
         )
-        self.speed = random.randint(1,5)
+        self.speed = 1
 
     def update(self):
         self.rect.move_ip(-self.speed, 0)
         if self.rect.right < 0:
             self.kill()
 
+# declaring the width and height of the display
 WIDTH, HEIGHT = 800, 800
 
+# setting the width and height
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
+# custom event to add new enemies to the screen
 ADDENEMY = pygame.USEREVENT + 1
 pygame.time.set_timer(ADDENEMY, 250)
 
-player1 = Player(10, 1)
+# creating an instance of the player
+player = Player(10, 1)
 
+# creating a group for all enemies to go into
 enemies = pygame.sprite.Group()
-enemy_counter = 0
 
+# creating a sprite group for all sprites
 all_sprites = pygame.sprite.Group()
-all_sprites.add(player1)
+# adding player to the sprites group
+all_sprites.add(player)
 
 # MAIN CONTROLLER
 running = True
 while running:
     for event in pygame.event.get():
+        # check if escape is hit to quit
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 running = False
+        # if the quit button top right is clicked
         elif event.type == QUIT:
             running = False
+        # creating a new enemy and adding it to the enemies and all_sprites sprite groups
         elif event.type == ADDENEMY:
-            new_enemy = Enemy(enemy_counter)
-            enemy_counter+=1
+            new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
+        # if playerhp is <= 0, game over
+        elif player.hp <=0:
+            running = False
 
-    
+    # set background color to black
     screen.fill((0, 0, 0))
     
     pressed_keys = pygame.key.get_pressed()
-    player1.update(pressed_keys)
+    player.update(pressed_keys)
     enemies.update()
 
+    # adding all sprites to the display
     for entity in all_sprites:
         screen.blit(entity.surf, entity.rect)
     
-    # UP TO HERE IT WORKS
+    # checking enemy group to see if collision is detected with player
     for enemy in enemies:
-        if pygame.Rect.colliderect(enemy.rect, player1):
+        if pygame.Rect.colliderect(enemy.rect, player.rect):
+            # removing the enemy that colided
             enemy.kill()
-    # if pygame.sprite.spritecollideany(player1, enemies):
-        
-    #     player1.hp -= 1
-       
-    #     running = False
+            # reducing the player's hp
+            player.hp -=1
 
+    # update display
     pygame.display.flip()
     
+# exit pygame
 pygame.quit()
